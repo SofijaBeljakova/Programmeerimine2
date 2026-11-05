@@ -1,46 +1,75 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using KooliProjekt.Application.Data;
-using KooliProjekt.Application.Features.TodoLists;
-using MediatR;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using KooliProjekt.Application.Features.TodoLists;
 
 namespace KooliProjekt.WebAPI.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class TodoListsController : ApiControllerBase
     {
         private readonly IMediator _mediator;
 
-        public TodoListsController(IMediator mediator) 
+        public TodoListsController(IMediator mediator)
         {
             _mediator = mediator;
         }
 
-        [HttpGet("List")]
-        public async Task<IEnumerable<TodoLists>> List()
+        
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] SaveTodoListCommand command)
         {
-            var query = new ListTodoListsQuery();
-            var result = await _mediator.Send(query);
-            return result;
-        }
+            command.Id = 0; 
+            var result = await _mediator.Send(command);
 
-        [HttpGet("Get/{id:int}")]
-        public async Task<IActionResult> Get(int id)
-        {
-            if (id <= 0)
+            if (result.HasErrors)
             {
-                return NotFound();
-            }
-
-            var query = new GetTodoListQuery { Id = id };
-            var result = await _mediator.Send(query);
-
-            if (result == null)
-            {
-                return NotFound();
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
+
+        
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] SaveTodoListCommand command)
+        {
+            command.Id = id; 
+            var result = await _mediator.Send(command);
+
+            if (result.HasErrors)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var command = new DeleteTodoListCommand { Id = id };
+            var result = await _mediator.Send(command);
+
+            if (result.HasErrors)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+       
+        [HttpGet]
+        public async Task<IActionResult> List([FromQuery] ListTodoListsQuery query)
+        {
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+
+
     }
 }
